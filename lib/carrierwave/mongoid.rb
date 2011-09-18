@@ -4,6 +4,32 @@ require 'mongoid'
 require 'carrierwave'
 require 'carrierwave/validations/active_model'
 
+module Mongoid
+  module Document    
+    def each_embedded association_name, &b
+      Array(send(association_name)).each &b
+    end
+  end
+end
+
+CarrierWave::Uploader::Base.class_eval do
+  def name; model.send("#{mounted_as}_filename") end
+end
+
+CarrierWave::SanitizedFile.class_eval do
+  def sanitize_regexp
+    /[^[:word:]\.\-\+\s_]/i
+  end
+end
+
+CarrierWave::Uploader::Cache.class_eval do
+  def original_filename=(filename)
+    raise CarrierWave::InvalidParameter, "invalid filename" unless filename =~ /\A[[:word:]\.\-\+\s_]+\z/i
+    @original_filename = filename
+  end
+end
+
+
 module CarrierWave
   module Mongoid
     include CarrierWave::Mount
@@ -49,6 +75,26 @@ module CarrierWave
           end
         end
       RUBY
+    end
+    
+    def mount_embedded_uploader association_name, column
+      after_save do |doc|
+        doc.each_embedded(association_name) do |embedded|
+          embedded.send "store_#{column}!"
+        end
+      end
+    
+      before_save do |doc|
+        doc.each_embedded(association_name) do |embedded|
+          embedded.send "write_#{column}_identifier"
+        end
+      end
+    
+      after_destroy do |doc|
+        doc.each_embedded(association_name) do |embedded|
+          embedded.send "remove_#{column}!"
+        end
+      end
     end
   end # Mongoid
 end # CarrierWave
