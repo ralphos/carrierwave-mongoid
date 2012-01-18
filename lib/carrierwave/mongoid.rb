@@ -24,7 +24,7 @@ end
 
 CarrierWave::Uploader::Cache.class_eval do
   def original_filename=(filename)
-    raise CarrierWave::InvalidParameter, "invalid filename" unless filename =~ /\A[[:word:]\.\-\+\s_]+\z/i
+    raise CarrierWave::InvalidParameter, "invalid filename" unless filename =~ /\A[\w\.\-\+\s_]+\z/i
     @original_filename = filename
   end
 end
