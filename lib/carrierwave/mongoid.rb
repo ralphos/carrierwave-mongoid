@@ -18,7 +18,7 @@ end
 
 CarrierWave::SanitizedFile.class_eval do
   def sanitize_regexp
-    /[^[:word:]\.\-\+\s_]/i
+    /[^\w\.\-\+\s_]/i
   end
 end
 
